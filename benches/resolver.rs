@@ -143,21 +143,9 @@ async fn create_tokio_resolve_task(oxc_resolver: Arc<rspack_resolver::Resolver>,
 fn bench_resolver(c: &mut Criterion) {
     let data = data();
 
-    // check validity
-    // for (path, request) in &data {
-    //     assert!(oxc_resolver().resolve(path, request).is_ok(), "{path:?} {request}");
-    // }
-
     let symlink_test_dir = create_symlinks().expect("Create symlink fixtures failed");
 
     let symlinks_range = 0u32..10000;
-
-    // for i in symlinks_range.clone() {
-    //     assert!(
-    //         oxc_resolver().resolve(&symlink_test_dir, &format!("./file{i}")).is_ok(),
-    //         "file{i}.js"
-    //     );
-    // }
 
     let mut group = c.benchmark_group("resolver");
 
@@ -173,7 +161,6 @@ fn bench_resolver(c: &mut Criterion) {
 
     group.bench_with_input(BenchmarkId::from_parameter("multi-thread"), &data, |b, data| {
         let runner = runtime::Runtime::new().expect("failed to create tokio runtime");
-
         b.to_async(runner).iter(|| async {
             let oxc_resolver = Arc::new(oxc_resolver());
 
@@ -189,9 +176,7 @@ fn bench_resolver(c: &mut Criterion) {
         BenchmarkId::from_parameter("resolve from symlinks"),
         &symlinks_range,
         |b, data| {
-            let runner = runtime::Builder::new_current_thread()
-                .build()
-                .expect("failed to create tokio runtime");
+            let runner = runtime::Runtime::new().expect("failed to create tokio runtime");
             b.to_async(runner).iter(|| async {
                 let oxc_resolver = oxc_resolver();
                 for i in data.clone() {
