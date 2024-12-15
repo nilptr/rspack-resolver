@@ -150,9 +150,9 @@ fn bench_resolver(c: &mut Criterion) {
     let mut group = c.benchmark_group("resolver");
 
     group.bench_with_input(BenchmarkId::from_parameter("single-thread"), &data, |b, data| {
+        let oxc_resolver = oxc_resolver();
         let runner = runtime::Runtime::new().expect("failed to create tokio runtime");
         b.to_async(runner).iter(|| async {
-            let oxc_resolver = oxc_resolver();
             for (path, request) in data {
                 _ = oxc_resolver.resolve(path, request).await;
             }
@@ -160,12 +160,10 @@ fn bench_resolver(c: &mut Criterion) {
     });
 
     group.bench_with_input(BenchmarkId::from_parameter("multi-thread"), &data, |b, data| {
+        let oxc_resolver = Arc::new(oxc_resolver());
         let runner = runtime::Runtime::new().expect("failed to create tokio runtime");
         b.to_async(runner).iter(|| async {
-            let oxc_resolver = Arc::new(oxc_resolver());
-
             let handles = data.iter().map(|(path, request)| create_tokio_resolve_task(oxc_resolver.clone(), path.clone(), request));
-
             for handle in handles {
                 handle.await;
             }
@@ -176,9 +174,9 @@ fn bench_resolver(c: &mut Criterion) {
         BenchmarkId::from_parameter("resolve from symlinks"),
         &symlinks_range,
         |b, data| {
+            let oxc_resolver = oxc_resolver();
             let runner = runtime::Runtime::new().expect("failed to create tokio runtime");
             b.to_async(runner).iter(|| async {
-                let oxc_resolver = oxc_resolver();
                 for i in data.clone() {
                     assert!(
                         oxc_resolver
